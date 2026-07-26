@@ -1,0 +1,15 @@
+{
+  "name": "금모으기 프로젝트",
+  "short_name": "금모으기",
+  "description": "시즌제 습관 채굴 일지",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#43301C",
+  "theme_color": "#22314F",
+  "lang": "ko",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
