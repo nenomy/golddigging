@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
-import { todayStr, ENCOURAGEMENTS } from "@/lib/season";
+import { todayStr, REMINDERS } from "@/lib/season";
 
 function kstMinutesNow(): number {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -87,7 +87,7 @@ async function handleSend(request: Request) {
 
     if (!subs || subs.length === 0) continue;
 
-    const message = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
+    const message = REMINDERS[Math.floor(Math.random() * REMINDERS.length)];
     const payload = JSON.stringify({
       title: "오늘의 채굴을 잊지 마세요 ⛏️",
       body: message,
