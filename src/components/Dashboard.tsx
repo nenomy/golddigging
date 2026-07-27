@@ -151,6 +151,18 @@ export default function Dashboard({
     showEncouragement(habitId, !wasWeekComplete);
   }
 
+  async function cancelCheckin(habitId: string) {
+    if (!window.confirm("오늘 채굴 인증을 취소할까요?")) return;
+    const { error } = await supabase
+      .from("checkins")
+      .delete()
+      .eq("habit_id", habitId)
+      .eq("user_id", userId)
+      .eq("date", today);
+    if (error) return;
+    setCheckins((prev) => prev.filter((c) => !(c.habit_id === habitId && c.date === today)));
+  }
+
   function handleVerifyClick(habitId: string, method: "checklist" | "photo") {
     if (method === "checklist") {
       checkIn(habitId, "checklist");
@@ -211,7 +223,7 @@ export default function Dashboard({
     const todayRec = checkins.find((c) => c.habit_id === habit.id && c.date === today);
 
     return (
-      <div key={habit.id} className="card habit-card">
+      <div key={habit.id} className={`card habit-card${habit.is_core ? " core" : ""}`}>
         <div className="habit-head">
           <div className="habit-name">{habit.name}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -274,8 +286,13 @@ export default function Dashboard({
         </div>
 
         {todayRec ? (
-          <div className="done-pill">
-            {todayRec.method === "photo" ? "오늘 사진으로 채굴 완료" : "오늘 체크리스트로 채굴 완료"}
+          <div className="done-pill-row">
+            <div className="done-pill">
+              {todayRec.method === "photo" ? "오늘 사진으로 채굴 완료" : "오늘 체크리스트로 채굴 완료"}
+            </div>
+            <button className="done-cancel" onClick={() => cancelCheckin(habit.id)}>
+              취소
+            </button>
           </div>
         ) : (
           <div className="verify-row">
@@ -304,7 +321,7 @@ export default function Dashboard({
       </div>
       <h1>금모으기 프로젝트</h1>
       <div className="sub">
-        목표를 채우는 건 금광에서 금을 캐는 일. 채굴 한 사이클은 한 주 단위, 4주(4사이클)가 한 시즌이에요. 시즌이 끝나면 기록이 아카이브에 남아요.
+        👷🏻아아! 안녕하세요 여러분 작업반장입니다. 오늘도 열심히 채굴해서 금을 모아봅시다! 무리하지 말고, 오늘도 힘내보자구요💪🏻
       </div>
 
       <NavTabs />
