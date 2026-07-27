@@ -270,6 +270,8 @@ h1{
   font-weight:700;
   font-size:13px;
   cursor:pointer;
+  white-space:nowrap;
+  flex-shrink:0;
 }
 .add-habit button:hover{background:#1a2740;}
 .add-habit button:active{
