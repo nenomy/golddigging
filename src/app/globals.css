@@ -382,9 +382,9 @@ h1{
   padding:2px 4px; font-family:'Noto Sans KR', sans-serif;
 }
 .habit-card.core{
-  border:2px solid var(--gold-dark);
-  background:linear-gradient(155deg, var(--card) 0%, rgba(217,165,54,0.14) 100%);
-  box-shadow:0 6px 20px rgba(151,115,14,0.3);
+  border:3px solid var(--gold-dark);
+  background:var(--card);
+  box-shadow:0 6px 20px rgba(151,115,14,0.35);
 }
 input[type=file]{ display:none; }
 .empty{ text-align:center; padding:30px 10px; color:var(--ink-soft); font-size:13.5px; line-height:1.6; }
