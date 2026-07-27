@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root{
-  color-scheme: light;
+  color-scheme: light dark;
   --paper: #EDE4CC;
   --paper-dark: #E3D6B4;
   --card: #F6F0DE;
@@ -18,6 +18,25 @@
   --soil-3: #5C4023;
   --soil-4: #43301C;
   --pixel: 'Galmuri11', 'IBM Plex Mono', monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper: #2B2318;
+    --paper-dark: #221B12;
+    --card: #2F2618;
+    --ink: #F1E6C8;
+    --ink-soft: #C9B98F;
+    --navy: #33456C;
+    --gold: #E3B94A;
+    --gold-dark: #C99A2E;
+    --gold-deep: #F0C860;
+    --line: rgba(241,230,200,0.16);
+    --shadow: 0 6px 18px rgba(0,0,0,0.45);
+    --soil-1: #6E5535;
+    --soil-2: #5C4325;
+    --soil-3: #45301C;
+    --soil-4: #2E2013;
+  }
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
