@@ -17,10 +17,12 @@
   --soil-2: #74542F;
   --soil-3: #5C4023;
   --soil-4: #43301C;
+  --card-core-end: #F2E2A6;
   --pixel: 'Galmuri11', 'IBM Plex Mono', monospace;
 }
 @media (prefers-color-scheme: dark){
   :root{
+    --card-core-end: #4A3A1E;
     --paper: #2B2318;
     --paper-dark: #221B12;
     --card: #2F2618;
@@ -383,7 +385,7 @@ h1{
 }
 .habit-card.core{
   border:3px solid var(--gold-dark);
-  background:var(--card);
+  background:linear-gradient(155deg, var(--card) 0%, var(--card-core-end) 100%);
   box-shadow:0 6px 20px rgba(151,115,14,0.35);
 }
 input[type=file]{ display:none; }

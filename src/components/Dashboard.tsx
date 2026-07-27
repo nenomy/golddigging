@@ -58,6 +58,8 @@ export default function Dashboard({
   const [overlay, setOverlay] = useState<{ title: string; msg: string; quote: string; src: string } | null>(null);
   const [pendingPhotoHabitId, setPendingPhotoHabitId] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const today = todayStr();
@@ -92,6 +94,26 @@ export default function Dashboard({
     await supabase.from("habits").delete().eq("id", id);
     setHabits((prev) => prev.filter((h) => h.id !== id));
     setCheckins((prev) => prev.filter((c) => c.habit_id !== id));
+  }
+
+  function startEditHabit(habit: Habit) {
+    setEditingHabitId(habit.id);
+    setEditingName(habit.name);
+  }
+
+  function cancelEditHabit() {
+    setEditingHabitId(null);
+    setEditingName("");
+  }
+
+  async function saveEditHabit(id: string) {
+    const name = editingName.trim();
+    if (!name) return;
+    const { error } = await supabase.from("habits").update({ name }).eq("id", id);
+    if (error) return;
+    setHabits((prev) => prev.map((h) => (h.id === id ? { ...h, name } : h)));
+    setEditingHabitId(null);
+    setEditingName("");
   }
 
   async function setCoreHabit(id: string) {
@@ -222,21 +244,58 @@ export default function Dashboard({
     const best = calcBestStreak(habit.id, season, checkins, vacationWeeks);
     const todayRec = checkins.find((c) => c.habit_id === habit.id && c.date === today);
 
+    const isEditing = editingHabitId === habit.id;
+
     return (
       <div key={habit.id} className={`card habit-card${habit.is_core ? " core" : ""}`}>
         <div className="habit-head">
-          <div className="habit-name">{habit.name}</div>
+          {isEditing ? (
+            <input
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveEditHabit(habit.id)}
+              maxLength={24}
+              autoFocus
+              style={{
+                flex: 1,
+                border: "1px solid var(--line)",
+                background: "var(--paper)",
+                borderRadius: 6,
+                padding: "4px 8px",
+                fontSize: 15,
+                marginRight: 8,
+              }}
+            />
+          ) : (
+            <div className="habit-name">{habit.name}</div>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {habit.is_core ? (
-              <span style={{ fontSize: 11, color: "var(--gold-deep)", fontWeight: 700 }}>⭐ 핵심</span>
+            {isEditing ? (
+              <>
+                <button className="habit-remove" onClick={() => saveEditHabit(habit.id)}>
+                  저장
+                </button>
+                <button className="habit-remove" onClick={cancelEditHabit}>
+                  취소
+                </button>
+              </>
             ) : (
-              <button className="habit-remove" onClick={() => setCoreHabit(habit.id)}>
-                핵심으로 설정
-              </button>
+              <>
+                {habit.is_core ? (
+                  <span style={{ fontSize: 11, color: "var(--gold-deep)", fontWeight: 700 }}>⭐ 핵심</span>
+                ) : (
+                  <button className="habit-remove" onClick={() => setCoreHabit(habit.id)}>
+                    핵심으로 설정
+                  </button>
+                )}
+                <button className="habit-remove" onClick={() => startEditHabit(habit)}>
+                  수정
+                </button>
+                <button className="habit-remove" onClick={() => removeHabit(habit.id)}>
+                  삭제
+                </button>
+              </>
             )}
-            <button className="habit-remove" onClick={() => removeHabit(habit.id)}>
-              삭제
-            </button>
           </div>
         </div>
 
