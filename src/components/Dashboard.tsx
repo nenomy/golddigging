@@ -17,6 +17,7 @@ import {
   isSeasonOver,
   isWeekComplete,
   isVacationWeek,
+  weekRange,
   getCurrentWeekIndex,
   calcStreak,
   calcBestStreak,
@@ -228,25 +229,30 @@ export default function Dashboard({
         </div>
 
         <div className="stampboard">
-          {Array.from({ length: 7 }, (_, i) => 6 - i).map((i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            return (
-              <div className="day-label" key={`lbl-${i}`}>
-                {["일", "월", "화", "수", "목", "금", "토"][d.getDay()]}
-              </div>
-            );
-          })}
-          {Array.from({ length: 7 }, (_, i) => 6 - i).map((i) => {
-            const ds = dateStrOffset(-i);
-            const rec = checkins.find((c) => c.habit_id === habit.id && c.date === ds);
-            const d = new Date(ds);
-            return (
-              <div key={`cell-${i}`} className={`cell${i === 0 ? " today" : ""}`}>
-                {!rec ? d.getDate() : <div className="stamp-mark">{rec.method === "photo" ? "📷" : "🪙"}</div>}
-              </div>
-            );
-          })}
+          {(() => {
+            const weekStart = weekRange(season, curWeek).from;
+            return Array.from({ length: 7 }, (_, i) => i).map((i) => {
+              const d = new Date(dateStrOffset(i, weekStart));
+              return (
+                <div className="day-label" key={`lbl-${i}`}>
+                  {["일", "월", "화", "수", "목", "금", "토"][d.getDay()]}
+                </div>
+              );
+            });
+          })()}
+          {(() => {
+            const weekStart = weekRange(season, curWeek).from;
+            return Array.from({ length: 7 }, (_, i) => i).map((i) => {
+              const ds = dateStrOffset(i, weekStart);
+              const rec = checkins.find((c) => c.habit_id === habit.id && c.date === ds);
+              const d = new Date(ds);
+              return (
+                <div key={`cell-${i}`} className={`cell${ds === today ? " today" : ""}`}>
+                  {!rec ? d.getDate() : <div className="stamp-mark">{rec.method === "photo" ? "📷" : "🪙"}</div>}
+                </div>
+              );
+            });
+          })()}
         </div>
 
         <div className="week-summary">
