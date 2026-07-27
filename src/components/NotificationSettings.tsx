@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -15,13 +15,31 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-export default function NotificationSettings({ initialTime, initialEnabled }: Props) {
+export default function NotificationSettings({ initialTime }: Props) {
   const supabase = createClient();
   const [time, setTime] = useState(initialTime.slice(0, 5));
   const [savedTime, setSavedTime] = useState(initialTime.slice(0, 5));
-  const [enabled, setEnabled] = useState(initialEnabled);
+  const [enabled, setEnabled] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkSubscription() {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (!cancelled) setEnabled(!!subscription);
+      } catch {
+        // 브라우저가 확인을 거부해도 무시하고 "켜기" 상태로 둠
+      }
+    }
+    checkSubscription();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function saveTime() {
     if (!time || time.length !== 5) return;
@@ -79,6 +97,15 @@ export default function NotificationSettings({ initialTime, initialEnabled }: Pr
   }
 
   async function disableNotifications() {
+    try {
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) await subscription.unsubscribe();
+      }
+    } catch {
+      // 구독 해제 실패해도 계속 진행
+    }
     const {
       data: { user },
     } = await supabase.auth.getUser();
