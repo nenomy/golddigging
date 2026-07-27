@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import BackgroundDecor from "@/components/BackgroundDecor";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +31,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#22314F",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -47,6 +49,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ServiceWorkerRegister />
+        <BackgroundDecor />
         {children}
       </body>
     </html>

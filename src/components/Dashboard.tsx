@@ -25,7 +25,7 @@ import {
   QUOTES,
 } from "@/lib/season";
 
-type Habit = { id: string; name: string; is_active: boolean };
+type Habit = { id: string; name: string; is_active: boolean; is_core: boolean };
 
 type Props = {
   userId: string;
@@ -75,9 +75,10 @@ export default function Dashboard({
   async function addHabit() {
     const name = habitInput.trim();
     if (!name) return;
+    const isCore = !habits.some((h) => h.is_core);
     const { data, error } = await supabase
       .from("habits")
-      .insert({ user_id: userId, name })
+      .insert({ user_id: userId, name, is_core: isCore })
       .select()
       .single();
     if (!error && data) {
@@ -90,6 +91,15 @@ export default function Dashboard({
     await supabase.from("habits").delete().eq("id", id);
     setHabits((prev) => prev.filter((h) => h.id !== id));
     setCheckins((prev) => prev.filter((c) => c.habit_id !== id));
+  }
+
+  async function setCoreHabit(id: string) {
+    const currentCore = habits.find((h) => h.is_core);
+    if (currentCore) {
+      await supabase.from("habits").update({ is_core: false }).eq("id", currentCore.id);
+    }
+    await supabase.from("habits").update({ is_core: true }).eq("id", id);
+    setHabits((prev) => prev.map((h) => ({ ...h, is_core: h.id === id })));
   }
 
   function showEncouragement(habitId: string, justCompletedWeek: boolean) {
@@ -193,6 +203,94 @@ export default function Dashboard({
     }
   }
 
+  function renderHabitCard(habit: Habit) {
+    if (!season) return null;
+    const streak = calcStreak(habit.id, season, checkins, vacationWeeks);
+    const best = calcBestStreak(habit.id, season, checkins, vacationWeeks);
+    const todayRec = checkins.find((c) => c.habit_id === habit.id && c.date === today);
+
+    return (
+      <div key={habit.id} className="card habit-card">
+        <div className="habit-head">
+          <div className="habit-name">{habit.name}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {habit.is_core ? (
+              <span style={{ fontSize: 11, color: "var(--gold-deep)", fontWeight: 700 }}>⭐ 핵심</span>
+            ) : (
+              <button className="habit-remove" onClick={() => setCoreHabit(habit.id)}>
+                핵심으로 설정
+              </button>
+            )}
+            <button className="habit-remove" onClick={() => removeHabit(habit.id)}>
+              삭제
+            </button>
+          </div>
+        </div>
+
+        <div className="stampboard">
+          {Array.from({ length: 7 }, (_, i) => 6 - i).map((i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            return (
+              <div className="day-label" key={`lbl-${i}`}>
+                {["일", "월", "화", "수", "목", "금", "토"][d.getDay()]}
+              </div>
+            );
+          })}
+          {Array.from({ length: 7 }, (_, i) => 6 - i).map((i) => {
+            const ds = dateStrOffset(-i);
+            const rec = checkins.find((c) => c.habit_id === habit.id && c.date === ds);
+            const d = new Date(ds);
+            return (
+              <div key={`cell-${i}`} className={`cell${i === 0 ? " today" : ""}`}>
+                {!rec ? d.getDate() : <div className="stamp-mark">{rec.method === "photo" ? "📷" : "🪙"}</div>}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="week-summary">
+          <span className="ws-label">주차</span>
+          {Array.from({ length: WEEK_COUNT }, (_, w) => w).map((w) => {
+            const complete = isWeekComplete(habit.id, w, season, checkins);
+            const vacation = isVacationWeek(w, vacationWeeks);
+            const icon = complete ? "🪙" : vacation ? "⛱️" : w > curWeek ? "·" : w === curWeek ? "⏳" : "✕";
+            return (
+              <span
+                key={w}
+                className={`week-dot${complete ? " complete" : ""}${!complete && vacation ? " vacation" : ""}${w === curWeek ? " current" : ""}`}
+              >
+                {icon}
+              </span>
+            );
+          })}
+          <span className="ws-streak">연속 {streak}주</span>
+        </div>
+
+        {todayRec ? (
+          <div className="done-pill">
+            {todayRec.method === "photo" ? "오늘 사진으로 채굴 완료" : "오늘 체크리스트로 채굴 완료"}
+          </div>
+        ) : (
+          <div className="verify-row">
+            <button className="verify-btn" onClick={() => handleVerifyClick(habit.id, "checklist")}>
+              <span className="ic">🪙</span>체크리스트 채굴
+            </button>
+            <button className="verify-btn" onClick={() => handleVerifyClick(habit.id, "photo")}>
+              <span className="ic">📷</span>사진 채굴
+            </button>
+          </div>
+        )}
+        <div className="best-streak" style={{ marginTop: 8 }}>
+          최고 연속 {best}주
+        </div>
+      </div>
+    );
+  }
+
+  const coreHabit = habits.find((h) => h.is_core);
+  const extraHabits = habits.filter((h) => !h.is_core);
+
   return (
     <div className="app">
       <div className="eyebrow" suppressHydrationWarning>
@@ -272,85 +370,10 @@ export default function Dashboard({
         </div>
       ) : (
         <div>
-          {habits.map((habit) => {
-            if (!season) return null;
-            const streak = calcStreak(habit.id, season, checkins, vacationWeeks);
-            const best = calcBestStreak(habit.id, season, checkins, vacationWeeks);
-            const todayRec = checkins.find((c) => c.habit_id === habit.id && c.date === today);
-
-            return (
-              <div key={habit.id} className="card habit-card">
-                <div className="habit-head">
-                  <div className="habit-name">{habit.name}</div>
-                  <button className="habit-remove" onClick={() => removeHabit(habit.id)}>
-                    삭제
-                  </button>
-                </div>
-
-                <div className="stampboard">
-                  {Array.from({ length: 7 }, (_, i) => 6 - i).map((i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    return (
-                      <div className="day-label" key={`lbl-${i}`}>
-                        {["일", "월", "화", "수", "목", "금", "토"][d.getDay()]}
-                      </div>
-                    );
-                  })}
-                  {Array.from({ length: 7 }, (_, i) => 6 - i).map((i) => {
-                    const ds = dateStrOffset(-i);
-                    const rec = checkins.find((c) => c.habit_id === habit.id && c.date === ds);
-                    const d = new Date(ds);
-                    return (
-                      <div key={`cell-${i}`} className={`cell${i === 0 ? " today" : ""}`}>
-                        {!rec ? (
-                          d.getDate()
-                        ) : (
-                          <div className={`stamp-mark`}>{rec.method === "photo" ? "📷" : "🪙"}</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="week-summary">
-                  <span className="ws-label">주차</span>
-                  {Array.from({ length: WEEK_COUNT }, (_, w) => w).map((w) => {
-                    const complete = isWeekComplete(habit.id, w, season, checkins);
-                    const vacation = isVacationWeek(w, vacationWeeks);
-                    const icon = complete ? "🪙" : vacation ? "⛱️" : w > curWeek ? "·" : w === curWeek ? "⏳" : "✕";
-                    return (
-                      <span
-                        key={w}
-                        className={`week-dot${complete ? " complete" : ""}${!complete && vacation ? " vacation" : ""}${w === curWeek ? " current" : ""}`}
-                      >
-                        {icon}
-                      </span>
-                    );
-                  })}
-                  <span className="ws-streak">연속 {streak}주</span>
-                </div>
-
-                {todayRec ? (
-                  <div className="done-pill">
-                    {todayRec.method === "photo" ? "오늘 사진으로 채굴 완료" : "오늘 체크리스트로 채굴 완료"}
-                  </div>
-                ) : (
-                  <div className="verify-row">
-                    <button className="verify-btn" onClick={() => handleVerifyClick(habit.id, "checklist")}>
-                      <span className="ic">🪙</span>체크리스트 채굴
-                    </button>
-                    <button className="verify-btn" onClick={() => handleVerifyClick(habit.id, "photo")}>
-                      <span className="ic">📷</span>사진 채굴
-                    </button>
-                  </div>
-                )}
-                <div className="best-streak" style={{ marginTop: 8 }}>
-                  최고 연속 {best}주
-                </div>
-              </div>
-            );
-          })}
+          {coreHabit && <div className="habit-section-label">⭐ 핵심 채굴 목표</div>}
+          {coreHabit && renderHabitCard(coreHabit)}
+          {extraHabits.length > 0 && <div className="habit-section-label">추가 목표</div>}
+          {extraHabits.map((habit) => renderHabitCard(habit))}
         </div>
       )}
 

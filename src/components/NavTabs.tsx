@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const TABS = [
   { href: "/", label: "홈" },
-  { href: "/ranking", label: "랭킹" },
+  { href: "/lounge", label: "휴게실" },
   { href: "/archive", label: "아카이브" },
 ];
 
