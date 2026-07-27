@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import NavTabs from "@/components/NavTabs";
 import InstallBanner from "@/components/InstallBanner";
-import NotificationSettings from "@/components/NotificationSettings";
+import NotificationBell from "@/components/NotificationBell";
 import {
   Season,
   Checkin,
@@ -484,6 +484,7 @@ export default function Dashboard({
 
   return (
     <div className="app">
+      <NotificationBell />
       <div className="eyebrow" suppressHydrationWarning>
         {new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "long" })}
       </div>
@@ -550,8 +551,6 @@ export default function Dashboard({
           <button onClick={addHabit}>추가</button>
         </div>
       </div>
-
-      <NotificationSettings />
 
       {habits.length === 0 ? (
         <div className="empty">
