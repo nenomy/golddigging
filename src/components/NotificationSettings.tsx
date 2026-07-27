@@ -1,12 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-
-type Props = {
-  initialTime: string;
-  initialEnabled: boolean;
-};
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -15,10 +9,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-export default function NotificationSettings({ initialTime }: Props) {
-  const supabase = createClient();
-  const [time, setTime] = useState(initialTime.slice(0, 5));
-  const [savedTime, setSavedTime] = useState(initialTime.slice(0, 5));
+export default function NotificationSettings() {
   const [enabled, setEnabled] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -40,17 +31,6 @@ export default function NotificationSettings({ initialTime }: Props) {
       cancelled = true;
     };
   }, []);
-
-  async function saveTime() {
-    if (!time || time.length !== 5) return;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("profiles").update({ notification_time: time }).eq("id", user.id);
-    setSavedTime(time);
-    setStatus("알림 시각이 저장됐어요.");
-  }
 
   async function enableNotifications() {
     setBusy(true);
@@ -83,14 +63,8 @@ export default function NotificationSettings({ initialTime }: Props) {
         return;
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from("profiles").update({ notification_enabled: true }).eq("id", user.id);
-      }
       setEnabled(true);
-      setStatus("알림이 켜졌어요!");
+      setStatus("이 기기에서 알림을 받을 수 있어요! 이제 각 목표 카드 아래에서 알림 시간을 설정해주세요.");
     } finally {
       setBusy(false);
     }
@@ -106,57 +80,28 @@ export default function NotificationSettings({ initialTime }: Props) {
     } catch {
       // 구독 해제 실패해도 계속 진행
     }
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from("profiles").update({ notification_enabled: false }).eq("id", user.id);
-    }
     setEnabled(false);
-    setStatus("알림이 꺼졌어요.");
+    setStatus("이 기기 알림을 껐어요.");
   }
 
   return (
     <div className="card">
       <div className="habit-head" style={{ marginBottom: 10 }}>
         <div className="habit-name" style={{ fontSize: 16 }}>
-          알림 설정
+          이 기기에서 알림 받기
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>매일</span>
-        <input
-          type="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          style={{ border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px" }}
-        />
-        <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>에 알림 받기</span>
-        <button
-          onClick={saveTime}
-          disabled={time === savedTime}
-          style={{
-            fontFamily: "var(--pixel)",
-            fontSize: 11,
-            padding: "6px 10px",
-            background: time === savedTime ? "var(--paper-dark)" : "var(--navy)",
-            color: time === savedTime ? "var(--ink-soft)" : "#F6F0DE",
-            border: "none",
-            borderRadius: 6,
-            cursor: time === savedTime ? "default" : "pointer",
-          }}
-        >
-          저장
-        </button>
+      <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 10, lineHeight: 1.5 }}>
+        먼저 이 기기에서 알림 권한을 켜주세요. 각 목표별 알림 시간은 아래 목표 카드마다 따로 설정할 수 있어요.
       </div>
       <div className="verify-row">
         {enabled ? (
           <button className="verify-btn" onClick={disableNotifications}>
-            알림 끄기
+            이 기기 알림 끄기
           </button>
         ) : (
           <button className="verify-btn" onClick={enableNotifications} disabled={busy}>
-            {busy ? "처리 중..." : "알림 켜기"}
+            {busy ? "처리 중..." : "이 기기 알림 켜기"}
           </button>
         )}
       </div>

@@ -47,14 +47,16 @@ async function handleSend(request: Request) {
 
   const nowMin = kstMinutesNow();
   const windowEnd = (nowMin + 15) % 1440;
+  const today = todayStr();
 
-  const { data: profiles } = await admin
-    .from("profiles")
-    .select("id, nickname, notification_time")
+  const { data: habits } = await admin
+    .from("habits")
+    .select("id, user_id, name, notification_time")
+    .eq("is_active", true)
     .eq("notification_enabled", true);
 
-  const matched = (profiles ?? []).filter((p) => {
-    const t = timeStrToMinutes(p.notification_time);
+  const matched = (habits ?? []).filter((h) => {
+    const t = timeStrToMinutes(h.notification_time);
     if (windowEnd > nowMin) return t >= nowMin && t < windowEnd;
     // 자정을 넘어가는 구간 (예: 23:50 ~ 00:05)
     return t >= nowMin || t < windowEnd;
@@ -62,34 +64,26 @@ async function handleSend(request: Request) {
 
   let sent = 0;
 
-  for (const profile of matched) {
-    const today = todayStr();
-    const { data: habits } = await admin
-      .from("habits")
-      .select("id")
-      .eq("user_id", profile.id)
-      .eq("is_active", true);
-
-    if (!habits || habits.length === 0) continue;
-
-    const { data: todayCheckins } = await admin
+  for (const habit of matched) {
+    const { data: todayCheckin } = await admin
       .from("checkins")
-      .select("habit_id")
-      .eq("user_id", profile.id)
-      .eq("date", today);
+      .select("id")
+      .eq("habit_id", habit.id)
+      .eq("date", today)
+      .maybeSingle();
 
-    if ((todayCheckins?.length ?? 0) >= habits.length) continue;
+    if (todayCheckin) continue;
 
     const { data: subs } = await admin
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth_key")
-      .eq("user_id", profile.id);
+      .eq("user_id", habit.user_id);
 
     if (!subs || subs.length === 0) continue;
 
     const message = REMINDERS[Math.floor(Math.random() * REMINDERS.length)];
     const payload = JSON.stringify({
-      title: "오늘의 채굴을 잊지 마세요 ⛏️",
+      title: `⛏️ "${habit.name}" 아직이에요!`,
       body: message,
       url: "/",
     });
@@ -113,5 +107,5 @@ async function handleSend(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, matchedUsers: matched.length, sent });
+  return NextResponse.json({ ok: true, matchedHabits: matched.length, sent });
 }

@@ -26,7 +26,15 @@ import {
   QUOTES,
 } from "@/lib/season";
 
-type Habit = { id: string; name: string; is_active: boolean; is_core: boolean };
+type Habit = {
+  id: string;
+  name: string;
+  is_active: boolean;
+  is_core: boolean;
+  sort_order: number;
+  notification_enabled: boolean;
+  notification_time: string;
+};
 
 type Props = {
   userId: string;
@@ -34,8 +42,6 @@ type Props = {
   initialHabits: Habit[];
   initialCheckins: Checkin[];
   initialVacationWeeks: number[];
-  initialNotificationTime: string;
-  initialNotificationEnabled: boolean;
 };
 
 export default function Dashboard({
@@ -44,8 +50,6 @@ export default function Dashboard({
   initialHabits,
   initialCheckins,
   initialVacationWeeks,
-  initialNotificationTime,
-  initialNotificationEnabled,
 }: Props) {
   const supabase = createClient();
   const router = useRouter();
@@ -60,7 +64,10 @@ export default function Dashboard({
   const [archiving, setArchiving] = useState(false);
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const dragInfo = useRef<{ id: string; startY: number; timer: ReturnType<typeof setTimeout> | null } | null>(null);
 
   const today = todayStr();
   const curWeek = season ? getCurrentWeekIndex(season) : 0;
@@ -81,7 +88,7 @@ export default function Dashboard({
     const isCore = !habits.some((h) => h.is_core);
     const { data, error } = await supabase
       .from("habits")
-      .insert({ user_id: userId, name, is_core: isCore })
+      .insert({ user_id: userId, name, is_core: isCore, sort_order: habits.length })
       .select()
       .single();
     if (!error && data) {
@@ -123,6 +130,11 @@ export default function Dashboard({
     }
     await supabase.from("habits").update({ is_core: true }).eq("id", id);
     setHabits((prev) => prev.map((h) => ({ ...h, is_core: h.id === id })));
+  }
+
+  async function updateHabitNotification(id: string, patch: Partial<Pick<Habit, "notification_enabled" | "notification_time">>) {
+    setHabits((prev) => prev.map((h) => (h.id === id ? { ...h, ...patch } : h)));
+    await supabase.from("habits").update(patch).eq("id", id);
   }
 
   function showEncouragement(habitId: string, justCompletedWeek: boolean) {
@@ -238,7 +250,65 @@ export default function Dashboard({
     }
   }
 
-  function renderHabitCard(habit: Habit) {
+  function reorderExtras(draggedId: string, targetIndex: number) {
+    setHabits((prev) => {
+      const core = prev.filter((h) => h.is_core);
+      const extras = prev.filter((h) => !h.is_core);
+      const fromIndex = extras.findIndex((h) => h.id === draggedId);
+      if (fromIndex === -1 || fromIndex === targetIndex) return prev;
+      const reordered = [...extras];
+      const [moved] = reordered.splice(fromIndex, 1);
+      reordered.splice(targetIndex, 0, moved);
+      return [...core, ...reordered];
+    });
+  }
+
+  function handleDragPointerDown(e: React.PointerEvent, habitId: string) {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    dragInfo.current = {
+      id: habitId,
+      startY: e.clientY,
+      timer: setTimeout(() => setDraggingId(habitId), 350),
+    };
+  }
+
+  function handleDragPointerMove(e: React.PointerEvent) {
+    if (!dragInfo.current) return;
+    if (!draggingId) {
+      if (Math.abs(e.clientY - dragInfo.current.startY) > 8 && dragInfo.current.timer) {
+        clearTimeout(dragInfo.current.timer);
+        dragInfo.current = null;
+      }
+      return;
+    }
+    const extras = habits.filter((h) => !h.is_core);
+    let targetIndex = extras.length - 1;
+    for (let i = 0; i < extras.length; i++) {
+      const el = cardRefs.current.get(extras[i].id);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      if (e.clientY < mid) {
+        targetIndex = i;
+        break;
+      }
+    }
+    reorderExtras(dragInfo.current.id, targetIndex);
+  }
+
+  async function handleDragPointerUp() {
+    if (dragInfo.current?.timer) clearTimeout(dragInfo.current.timer);
+    if (draggingId) {
+      const extras = habits.filter((h) => !h.is_core);
+      await Promise.all(
+        extras.map((h, i) => supabase.from("habits").update({ sort_order: i }).eq("id", h.id)),
+      );
+    }
+    dragInfo.current = null;
+    setDraggingId(null);
+  }
+
+  function renderHabitCard(habit: Habit, draggable: boolean) {
     if (!season) return null;
     const streak = calcStreak(habit.id, season, checkins, vacationWeeks);
     const best = calcBestStreak(habit.id, season, checkins, vacationWeeks);
@@ -247,8 +317,26 @@ export default function Dashboard({
     const isEditing = editingHabitId === habit.id;
 
     return (
-      <div key={habit.id} className={`card habit-card${habit.is_core ? " core" : ""}`}>
+      <div
+        key={habit.id}
+        ref={(el) => {
+          if (el) cardRefs.current.set(habit.id, el);
+          else cardRefs.current.delete(habit.id);
+        }}
+        className={`card habit-card${habit.is_core ? " core" : ""}${draggingId === habit.id ? " dragging" : ""}`}
+      >
         <div className="habit-head">
+          {draggable && !isEditing && (
+            <span
+              className="drag-handle"
+              onPointerDown={(e) => handleDragPointerDown(e, habit.id)}
+              onPointerMove={handleDragPointerMove}
+              onPointerUp={handleDragPointerUp}
+              onPointerCancel={handleDragPointerUp}
+            >
+              ⠿
+            </span>
+          )}
           {isEditing ? (
             <input
               value={editingName}
@@ -366,6 +454,27 @@ export default function Dashboard({
         <div className="best-streak" style={{ marginTop: 8 }}>
           최고 연속 {best}주
         </div>
+
+        <div className="habit-notify-row">
+          <span style={{ fontSize: 12 }}>🔔</span>
+          <input
+            type="time"
+            value={habit.notification_time.slice(0, 5)}
+            onChange={(e) =>
+              setHabits((prev) =>
+                prev.map((h) => (h.id === habit.id ? { ...h, notification_time: e.target.value } : h)),
+              )
+            }
+            onBlur={(e) => updateHabitNotification(habit.id, { notification_time: e.target.value })}
+          />
+          <button
+            className="habit-notify-toggle"
+            data-on={habit.notification_enabled}
+            onClick={() => updateHabitNotification(habit.id, { notification_enabled: !habit.notification_enabled })}
+          >
+            {habit.notification_enabled ? "이 목표 알림 켬" : "이 목표 알림 꺼짐"}
+          </button>
+        </div>
       </div>
     );
   }
@@ -442,7 +551,7 @@ export default function Dashboard({
         </div>
       </div>
 
-      <NotificationSettings initialTime={initialNotificationTime} initialEnabled={initialNotificationEnabled} />
+      <NotificationSettings />
 
       {habits.length === 0 ? (
         <div className="empty">
@@ -453,9 +562,9 @@ export default function Dashboard({
       ) : (
         <div>
           {coreHabit && <div className="habit-section-label">⭐ 핵심 채굴 목표</div>}
-          {coreHabit && renderHabitCard(coreHabit)}
-          {extraHabits.length > 0 && <div className="habit-section-label">추가 목표</div>}
-          {extraHabits.map((habit) => renderHabitCard(habit))}
+          {coreHabit && renderHabitCard(coreHabit, false)}
+          {extraHabits.length > 0 && <div className="habit-section-label">추가 목표 (꾹 눌러서 순서 변경)</div>}
+          {extraHabits.map((habit) => renderHabitCard(habit, true))}
         </div>
       )}
 

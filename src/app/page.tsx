@@ -24,7 +24,7 @@ export default async function Home() {
     .select("*")
     .eq("user_id", user.id)
     .eq("is_active", true)
-    .order("created_at", { ascending: true });
+    .order("sort_order", { ascending: true });
 
   const { data: checkins } = season
     ? await supabase
@@ -43,12 +43,6 @@ export default async function Home() {
         .eq("season_id", season.id)
     : { data: [] };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("notification_time, notification_enabled")
-    .eq("id", user.id)
-    .single();
-
   return (
     <Dashboard
       userId={user.id}
@@ -56,8 +50,6 @@ export default async function Home() {
       initialHabits={habits ?? []}
       initialCheckins={checkins ?? []}
       initialVacationWeeks={(vacationRows ?? []).map((r) => r.week_index)}
-      initialNotificationTime={profile?.notification_time ?? "21:00:00"}
-      initialNotificationEnabled={profile?.notification_enabled ?? false}
     />
   );
 }
