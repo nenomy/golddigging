@@ -21,7 +21,7 @@
   --pixel: 'Galmuri11', 'IBM Plex Mono', monospace;
 }
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --card-core-end: #4A3A1E;
     --paper: #2B2318;
     --paper-dark: #221B12;
@@ -39,6 +39,45 @@
     --soil-3: #45301C;
     --soil-4: #2E2013;
   }
+}
+/* 시스템 설정과 무관하게 앱 안에서 직접 고른 테마 (localStorage로 저장됨) */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --card-core-end: #4A3A1E;
+  --paper: #2B2318;
+  --paper-dark: #221B12;
+  --card: #2F2618;
+  --ink: #F1E6C8;
+  --ink-soft: #C9B98F;
+  --navy: #33456C;
+  --gold: #E3B94A;
+  --gold-dark: #C99A2E;
+  --gold-deep: #F0C860;
+  --line: rgba(241,230,200,0.16);
+  --shadow: 0 6px 18px rgba(0,0,0,0.45);
+  --soil-1: #6E5535;
+  --soil-2: #5C4325;
+  --soil-3: #45301C;
+  --soil-4: #2E2013;
+}
+:root[data-theme="light"]{
+  color-scheme: light;
+  --card-core-end: #F2E2A6;
+  --paper: #EDE4CC;
+  --paper-dark: #E3D6B4;
+  --card: #F6F0DE;
+  --ink: #2B2620;
+  --ink-soft: #5A5142;
+  --navy: #22314F;
+  --gold: #D9A536;
+  --gold-dark: #97730E;
+  --gold-deep: #6E5410;
+  --line: rgba(43,38,32,0.16);
+  --shadow: 0 6px 18px rgba(43,38,32,0.12);
+  --soil-1: #8B6B43;
+  --soil-2: #74542F;
+  --soil-3: #5C4023;
+  --soil-4: #43301C;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
@@ -134,6 +173,23 @@ body::before{
   z-index:2;
 }
 .bell-btn:hover{ background:rgba(43,38,32,0.5); }
+.theme-toggle-btn{
+  position:fixed;
+  top:16px;
+  left:14px;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:rgba(43,38,32,0.35);
+  border:1px solid rgba(255,255,255,0.15);
+  font-size:16px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:30;
+}
+.theme-toggle-btn:hover{ background:rgba(43,38,32,0.5); }
 .eyebrow{
   font-family:'IBM Plex Mono', monospace;
   font-size:12px;

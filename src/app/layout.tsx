@@ -2,7 +2,17 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import BackgroundDecor from "@/components/BackgroundDecor";
+import ThemeToggle from "@/components/ThemeToggle";
 import "./globals.css";
+
+const setThemeScript = `
+try {
+  var t = localStorage.getItem('theme');
+  if (t === 'light' || t === 'dark') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+} catch (e) {}
+`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,10 +60,12 @@ export default function RootLayout({
     >
       <head>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" />
+        <script dangerouslySetInnerHTML={{ __html: setThemeScript }} />
       </head>
       <body className="min-h-full flex flex-col">
         <ServiceWorkerRegister />
         <BackgroundDecor />
+        <ThemeToggle />
         {children}
       </body>
     </html>
