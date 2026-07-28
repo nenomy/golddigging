@@ -34,6 +34,10 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
 };
 
+// Supabase 프로젝트가 서울 리전이라, Vercel 함수도 서울(icn1)에서 실행되게 고정
+// (기본값인 미국 동부에서 실행되면 DB 요청마다 태평양을 왕복해서 느려짐)
+export const preferredRegion = "icn1";
+
 export default function RootLayout({
   children,
 }: Readonly<{

@@ -12,36 +12,31 @@ export default async function Home() {
     redirect("/login");
   }
 
-  const { data: season } = await supabase
-    .from("seasons")
-    .select("*")
-    .order("start_date", { ascending: false })
-    .limit(1)
-    .single();
+  const [{ data: season }, { data: habits }] = await Promise.all([
+    supabase.from("seasons").select("*").order("start_date", { ascending: false }).limit(1).single(),
+    supabase
+      .from("habits")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+  ]);
 
-  const { data: habits } = await supabase
-    .from("habits")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-
-  const { data: checkins } = season
-    ? await supabase
-        .from("checkins")
-        .select("habit_id, date, method")
-        .eq("user_id", user.id)
-        .gte("date", season.start_date)
-        .lte("date", season.end_date)
-    : { data: [] };
-
-  const { data: vacationRows } = season
-    ? await supabase
-        .from("season_vacation_weeks")
-        .select("week_index")
-        .eq("user_id", user.id)
-        .eq("season_id", season.id)
-    : { data: [] };
+  const [{ data: checkins }, { data: vacationRows }] = season
+    ? await Promise.all([
+        supabase
+          .from("checkins")
+          .select("habit_id, date, method")
+          .eq("user_id", user.id)
+          .gte("date", season.start_date)
+          .lte("date", season.end_date),
+        supabase
+          .from("season_vacation_weeks")
+          .select("week_index")
+          .eq("user_id", user.id)
+          .eq("season_id", season.id),
+      ])
+    : [{ data: [] }, { data: [] }];
 
   return (
     <Dashboard

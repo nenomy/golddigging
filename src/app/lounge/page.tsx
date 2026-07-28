@@ -9,21 +9,26 @@ type Profile = { id: string; nickname: string };
 
 export default async function LoungePage() {
   const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const admin = createSupabaseAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  const { data: coreHabits } = await admin.from("habits").select("id, user_id").eq("is_core", true);
-  const { data: profiles } = await admin.from("profiles").select("id, nickname");
+  const [
+    {
+      data: { user },
+    },
+    { data: coreHabits },
+    { data: profiles },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    admin.from("habits").select("id, user_id").eq("is_core", true),
+    admin.from("profiles").select("id, nickname"),
+  ]);
+
+  if (!user) {
+    redirect("/login");
+  }
 
   const today = todayStr();
   const coreHabitIds = (coreHabits ?? []).map((h: Habit) => h.id);
