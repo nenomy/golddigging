@@ -282,7 +282,7 @@ h1{
   border-right-color:rgba(0,0,0,0.45);
   border-bottom-color:rgba(0,0,0,0.45);
   border-radius:0;
-  padding:0 16px;
+  padding:0 12px;
   font-family:var(--pixel);
   font-weight:700;
   font-size:13px;
@@ -416,6 +416,27 @@ h1{
   border-bottom-color:#fff;
 }
 .verify-btn .ic{ font-size:20px; }
+.mine-btn{
+  width:100%; background:var(--paper);
+  border:2px solid;
+  border-top-color:#fff;
+  border-left-color:#fff;
+  border-right-color:rgba(43,38,32,0.35);
+  border-bottom-color:rgba(43,38,32,0.35);
+  border-radius:0; padding:8px 8px;
+  font-family:'Noto Sans KR', sans-serif; font-weight:700; font-size:13px;
+  color:var(--ink); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  transition:background 0.12s ease;
+}
+.mine-btn .ic{ font-size:16px; }
+.mine-btn:hover{ background:var(--paper-dark); }
+.mine-btn:active{
+  border-top-color:rgba(43,38,32,0.35);
+  border-left-color:rgba(43,38,32,0.35);
+  border-right-color:#fff;
+  border-bottom-color:#fff;
+}
 .done-pill-row{ display:flex; align-items:center; gap:8px; }
 .done-pill{
   flex:1;

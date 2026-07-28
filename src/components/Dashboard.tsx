@@ -60,12 +60,10 @@ export default function Dashboard({
   const [vacationWeeks, setVacationWeeks] = useState<number[]>(initialVacationWeeks);
   const [habitInput, setHabitInput] = useState("");
   const [overlay, setOverlay] = useState<{ title: string; msg: string; quote: string; src: string } | null>(null);
-  const [pendingPhotoHabitId, setPendingPhotoHabitId] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const dragInfo = useRef<{ id: string; startY: number; timer: ReturnType<typeof setTimeout> | null } | null>(null);
 
@@ -158,30 +156,19 @@ export default function Dashboard({
     }
   }
 
-  async function checkIn(habitId: string, method: "checklist" | "photo", file?: File) {
+  async function checkIn(habitId: string) {
     if (!season) return;
     const wasWeekComplete = isWeekComplete(habitId, curWeek, season, checkins);
-
-    let photoPath: string | null = null;
-    if (method === "photo" && file) {
-      const path = `${userId}/${habitId}-${today}-${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from("checkin-photos")
-        .upload(path, file, { contentType: file.type });
-      if (uploadError) return;
-      photoPath = path;
-    }
 
     const { error } = await supabase.from("checkins").insert({
       habit_id: habitId,
       user_id: userId,
       date: today,
-      method,
-      photo_path: photoPath,
+      method: "checklist",
     });
     if (error) return;
 
-    setCheckins((prev) => [...prev, { habit_id: habitId, date: today, method }]);
+    setCheckins((prev) => [...prev, { habit_id: habitId, date: today, method: "checklist" }]);
     showEncouragement(habitId, !wasWeekComplete);
   }
 
@@ -195,24 +182,6 @@ export default function Dashboard({
       .eq("date", today);
     if (error) return;
     setCheckins((prev) => prev.filter((c) => !(c.habit_id === habitId && c.date === today)));
-  }
-
-  function handleVerifyClick(habitId: string, method: "checklist" | "photo") {
-    if (method === "checklist") {
-      checkIn(habitId, "checklist");
-    } else {
-      setPendingPhotoHabitId(habitId);
-      fileInputRef.current?.click();
-    }
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file && pendingPhotoHabitId) {
-      checkIn(pendingPhotoHabitId, "photo", file);
-    }
-    setPendingPhotoHabitId(null);
-    e.target.value = "";
   }
 
   async function toggleVacation() {
@@ -434,22 +403,15 @@ export default function Dashboard({
 
         {todayRec ? (
           <div className="done-pill-row">
-            <div className="done-pill">
-              {todayRec.method === "photo" ? "오늘 사진으로 채굴 완료" : "오늘 체크리스트로 채굴 완료"}
-            </div>
+            <div className="done-pill">오늘 채굴 완료</div>
             <button className="done-cancel" onClick={() => cancelCheckin(habit.id)}>
               취소
             </button>
           </div>
         ) : (
-          <div className="verify-row">
-            <button className="verify-btn" onClick={() => handleVerifyClick(habit.id, "checklist")}>
-              <span className="ic">🪙</span>체크리스트 채굴
-            </button>
-            <button className="verify-btn" onClick={() => handleVerifyClick(habit.id, "photo")}>
-              <span className="ic">📷</span>사진 채굴
-            </button>
-          </div>
+          <button className="mine-btn" onClick={() => checkIn(habit.id)}>
+            <span className="ic">⛏️</span>채굴하기
+          </button>
         )}
         <div className="best-streak" style={{ marginTop: 8 }}>
           최고 연속 {best}주
@@ -567,9 +529,7 @@ export default function Dashboard({
         </div>
       )}
 
-      <div className="footnote">기록은 Supabase 서버에 저장돼요. 인증 사진은 본인만 볼 수 있는 비공개 저장소에 보관돼요.</div>
-
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} />
+      <div className="footnote">기록은 Supabase 서버에 저장돼요.</div>
 
       {overlay && (
         <div className="overlay show" onClick={() => setOverlay(null)}>
