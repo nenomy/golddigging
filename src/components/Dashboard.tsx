@@ -64,6 +64,7 @@ export default function Dashboard({
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const dragInfo = useRef<{ id: string; startY: number; timer: ReturnType<typeof setTimeout> | null } | null>(null);
 
@@ -326,34 +327,61 @@ export default function Dashboard({
           ) : (
             <div className="habit-name">{habit.name}</div>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {isEditing ? (
-              <>
-                <button className="habit-remove" onClick={() => saveEditHabit(habit.id)}>
-                  저장
+          {isEditing ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button className="habit-remove" onClick={() => saveEditHabit(habit.id)}>
+                저장
+              </button>
+              <button className="habit-remove" onClick={cancelEditHabit}>
+                취소
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {habit.is_core && (
+                <span style={{ fontSize: 11, color: "var(--gold-deep)", fontWeight: 700 }}>⭐ 핵심</span>
+              )}
+              <div className="habit-menu-wrap">
+                <button
+                  className="habit-menu-btn"
+                  onClick={() => setMenuOpenId(menuOpenId === habit.id ? null : habit.id)}
+                  aria-label="목표 설정 메뉴"
+                >
+                  ⚙️
                 </button>
-                <button className="habit-remove" onClick={cancelEditHabit}>
-                  취소
-                </button>
-              </>
-            ) : (
-              <>
-                {habit.is_core ? (
-                  <span style={{ fontSize: 11, color: "var(--gold-deep)", fontWeight: 700 }}>⭐ 핵심</span>
-                ) : (
-                  <button className="habit-remove" onClick={() => setCoreHabit(habit.id)}>
-                    핵심으로 설정
-                  </button>
+                {menuOpenId === habit.id && (
+                  <div className="habit-menu-dropdown">
+                    {!habit.is_core && (
+                      <button
+                        onClick={() => {
+                          setCoreHabit(habit.id);
+                          setMenuOpenId(null);
+                        }}
+                      >
+                        핵심으로 설정
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        startEditHabit(habit);
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => {
+                        removeHabit(habit.id);
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </div>
                 )}
-                <button className="habit-remove" onClick={() => startEditHabit(habit)}>
-                  수정
-                </button>
-                <button className="habit-remove" onClick={() => removeHabit(habit.id)}>
-                  삭제
-                </button>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="stampboard">
@@ -530,6 +558,8 @@ export default function Dashboard({
       )}
 
       <div className="footnote">기록은 Supabase 서버에 저장돼요.</div>
+
+      {menuOpenId && <div className="habit-menu-backdrop" onClick={() => setMenuOpenId(null)} />}
 
       {overlay && (
         <div className="overlay show" onClick={() => setOverlay(null)}>

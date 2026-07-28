@@ -307,16 +307,39 @@ h1{
 .habit-card{ margin-bottom:18px; }
 .habit-head{
   display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
+  align-items:center;
   margin-bottom:12px;
 }
 .habit-name{
+  flex:1;
+  min-width:0;
+  text-align:left;
   font-family:'Noto Serif KR', serif;
   font-weight:700;
   font-size:19px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 .habit-name::before{ content:"⛏️ "; }
+.habit-menu-wrap{ position:relative; }
+.habit-menu-btn{
+  background:none; border:none; cursor:pointer; font-size:15px;
+  padding:2px 4px; line-height:1;
+}
+.habit-menu-dropdown{
+  position:absolute; top:26px; right:0; z-index:6;
+  background:var(--card); border:1px solid var(--line); border-radius:8px;
+  box-shadow:var(--shadow); min-width:112px; overflow:hidden;
+}
+.habit-menu-dropdown button{
+  display:block; width:100%; text-align:left; padding:9px 12px;
+  background:none; border:none; font-size:12.5px; color:var(--ink);
+  cursor:pointer; font-family:'Noto Sans KR', sans-serif; white-space:nowrap;
+}
+.habit-menu-dropdown button:hover{ background:var(--paper); }
+.habit-menu-dropdown button + button{ border-top:1px solid var(--line); }
+.habit-menu-backdrop{ position:fixed; inset:0; z-index:5; }
 .habit-remove{
   background:none; border:none; color:var(--ink-soft);
   font-size:12px; cursor:pointer; text-decoration:underline;
