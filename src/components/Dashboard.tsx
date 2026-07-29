@@ -185,6 +185,35 @@ export default function Dashboard({
     setCheckins((prev) => prev.filter((c) => !(c.habit_id === habitId && c.date === today)));
   }
 
+  async function toggleDayCheckin(habitId: string, date: string) {
+    if (!season || date > today) return;
+    const existing = checkins.find((c) => c.habit_id === habitId && c.date === date);
+
+    if (existing) {
+      if (!window.confirm(`${fmtShort(date)} 채굴 기록을 취소할까요?`)) return;
+      const { error } = await supabase
+        .from("checkins")
+        .delete()
+        .eq("habit_id", habitId)
+        .eq("user_id", userId)
+        .eq("date", date);
+      if (error) return;
+      setCheckins((prev) => prev.filter((c) => !(c.habit_id === habitId && c.date === date)));
+      return;
+    }
+
+    const wasWeekComplete = isWeekComplete(habitId, curWeek, season, checkins);
+    const { error } = await supabase.from("checkins").insert({
+      habit_id: habitId,
+      user_id: userId,
+      date,
+      method: "checklist",
+    });
+    if (error) return;
+    setCheckins((prev) => [...prev, { habit_id: habitId, date, method: "checklist" }]);
+    showEncouragement(habitId, !wasWeekComplete);
+  }
+
   async function toggleVacation() {
     if (!season) return;
     const isOn = vacationWeeks.includes(curWeek);
@@ -402,8 +431,14 @@ export default function Dashboard({
               const ds = dateStrOffset(i, weekStart);
               const rec = checkins.find((c) => c.habit_id === habit.id && c.date === ds);
               const d = new Date(ds);
+              const isPast = ds < today;
+              const isFuture = ds > today;
               return (
-                <div key={`cell-${i}`} className={`cell${ds === today ? " today" : ""}`}>
+                <div
+                  key={`cell-${i}`}
+                  className={`cell${ds === today ? " today" : ""}${isPast ? " clickable" : ""}${isFuture ? " future" : ""}`}
+                  onClick={isPast ? () => toggleDayCheckin(habit.id, ds) : undefined}
+                >
                   {!rec ? d.getDate() : <div className="stamp-mark">{rec.method === "photo" ? "📷" : "🪙"}</div>}
                 </div>
               );

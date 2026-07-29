@@ -404,6 +404,9 @@ h1{
   position:relative; background:rgba(255,255,255,0.25);
 }
 .cell.today{ border-color:var(--navy); border-style:solid; }
+.cell.clickable{ cursor:pointer; }
+.cell.clickable:hover{ background:rgba(217,165,54,0.16); }
+.cell.future{ opacity:0.45; }
 .cell .stamp-mark{
   position:absolute; inset:0; border-radius:50%;
   display:flex; align-items:center; justify-content:center; font-size:14px;
